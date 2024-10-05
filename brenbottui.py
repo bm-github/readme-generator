@@ -80,10 +80,10 @@ class TextBasedChatBot:
             exit(1)
 
     def chat(self):
-        print("\nChat started. Type 'quit' to exit.")
+        print("\nLet's begin. Type 'I quit' to exit.")
         while True:
             user_message = input("\nYou: ").strip()
-            if user_message.lower() == 'quit':
+            if user_message.lower() == 'I quit':
                 break
 
             if not self.conversation:

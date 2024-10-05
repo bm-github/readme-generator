@@ -1,11 +1,9 @@
-# Optimized generate_readme.py
-
 import os
 import sys
 import glob
 import json
 import logging
-from typing import Dict, Callable, List
+from typing import Dict, Callable
 import anthropic
 import openai
 
@@ -37,23 +35,22 @@ def get_file_contents(file_path: str) -> str:
         logging.error(f"Error reading file {file_path}: {e}")
         return ""
 
-def scan_repository(file_types: Dict[str, str], changed_files: List[str]) -> str:
-    """Scan repository and return content of matched files."""
+def scan_repository(file_types: Dict[str, str]) -> str:
+    """Scan repository and return content of all matched files."""
     repo_content = []
     for file_type, glob_pattern in file_types.items():
         logging.info(f"Scanning for {file_type} files with pattern: {glob_pattern}")
         files = glob.glob(glob_pattern, recursive=True)
-        matched_files = set(files) & set(changed_files)
-        logging.info(f"Found {len(matched_files)} changed {file_type} files: {matched_files}")
-        if matched_files:
+        logging.info(f"Found {len(files)} {file_type} files")
+        if files:
             repo_content.append(f"\n{file_type}:")
-            for file in matched_files:
+            for file in files:
                 content = get_file_contents(file)
                 if content:
                     repo_content.append(f"\n--- {file} ---\n{content}")
     return "\n".join(repo_content)
 
-def chunk_content(content: str, chunk_size: int = 4000) -> List[str]:
+def chunk_content(content: str, chunk_size: int = 4000) -> list[str]:
     """Split content into chunks of specified size."""
     return [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
 
@@ -137,8 +134,7 @@ def generate_readme():
             logging.warning("No file types specified. Please set the file_types.json configuration file.")
             return
 
-        changed_files = get_env_var('CHANGED_FILES', '').split()
-        repo_content = scan_repository(file_types, changed_files)
+        repo_content = scan_repository(file_types)
         if not repo_content:
             logging.info("No files matching the specified types found in the repository.")
             return

@@ -1,0 +1,94 @@
+# Optimized main.yml
+
+name: Generate README with AI
+
+on:
+  push:
+    branches:
+      - 'update-readme'
+  workflow_dispatch:
+
+jobs:
+  debug-and-generate-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Debug Trigger
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Branch name: ${{ github.ref }}"
+          echo "Actor: ${{ github.actor }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip anthropic openai
+          pip freeze > requirements.txt
+
+      - name: Check library versions
+        run: |
+          python -c "import anthropic, openai; print(f'Anthropic: {anthropic.__version__}, OpenAI: {openai.__version__}')"
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | tr '\n' ' ')
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | tr '\n' ' ')
+          fi
+          echo "Changed files: $CHANGED_FILES"
+          echo "files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+
+      - name: Generate README
+        id: generate-readme
+        run: |
+          python .github/scripts/generate_readme.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AI_PROVIDER: ${{ vars.AI_PROVIDER }}
+          AI_MODEL: ${{ vars.AI_MODEL }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.files }}
+
+      - name: Commit and push README if changed
+        id: commit-push
+        if: steps.generate-readme.outputs.readme_generated == 'true'
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "No changes to README.md. Skipping commit and push."
+            echo "changes_made=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "Update README.md"
+            git push origin HEAD:update-readme
+            echo "changes_made=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Output result
+        run: |
+          if [ "${{ steps.generate-readme.outputs.readme_generated }}" == "false" ]; then
+            echo "No README generation was performed due to no matching file types."
+          elif [ "${{ steps.commit-push.outputs.changes_made }}" == "false" ]; then
+            echo "README was generated, but no changes were detected. No commit or push was performed."
+          else
+            echo "README was generated, committed, and pushed to the update-readme branch."
+          fi

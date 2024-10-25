@@ -1,0 +1,19 @@
+{
+    "Python Files": "**/*.py",
+    "Terraform Files": "**/*.tf",
+    "Terraform Variables Files": "**/*.tfvars",
+    "JavaScript Files": "**/*.js",
+    "TypeScript Files": "**/*.ts",
+    "HTML Files": "**/*.html",
+    "CSS Files": "**/*.css",
+    "Markdown Files": "**/*.md",
+    "YAML Files": "**/*.yml",
+    "JSON Files": "**/*.json",
+    "Shell Scripts": "**/*.sh",
+    "Dockerfile": "**/Dockerfile*",
+    "C++ Files": "**/*.cpp",
+    "Java Files": "**/*.java",
+    "Go Files": "**/*.go",
+    "Ruby Files": "**/*.rb",
+    "SQL Files": "**/*.sql"
+  }

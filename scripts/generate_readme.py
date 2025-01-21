@@ -131,47 +131,51 @@ def generate_readme():
     try:
         file_types = load_file_types()
         if not file_types:
-            logging.warning("No file types specified. Please set the file_types.json configuration file.")
+            logging.warning("No file types specified")
             return
 
         repo_content = scan_repository(file_types)
         if not repo_content:
-            logging.info("No files matching the specified types found in the repository.")
+            logging.info("No matching files found")
             return
 
-        logging.info(f"Repository content length: {len(repo_content)} characters")
+        prompt = f"""Generate a README.md with exactly these sections:
 
-        prompt = f"""Based on the following repository content, generate or update the README.md file.
-        Focus on the following sections: Project Description, Installation, Usage, and Contributing.
-        Only include information about file types that are present in the repository content provided.
-        Make sure to accurately reflect the purpose and functionality of the files present.
-        Group related files and their descriptions logically.
-        Provide appropriate explanations for each file type based on their content and purpose.
+## Project Description
+[Project overview and main features]
 
-        Repository Content:
-        {repo_content}
+## Installation
+[Installation steps]
 
-        Please generate the README.md content now:"""
+## Usage
+[Usage instructions]
+
+## Contributing
+[Contributing guidelines]
+
+Base the content on this repository structure:
+{repo_content}"""
 
         generate_readme_func = get_ai_provider()
         new_readme_content = generate_readme_func(prompt)
 
-        # Read existing README if it exists
         try:
             with open('README.md', 'r') as f:
                 existing_readme = f.read()
         except FileNotFoundError:
             existing_readme = ""
 
-        # Update specific sections
-        for section in ["Project Description", "Installation", "Usage", "Contributing"]:
+        # Update each section once
+        sections = ["Project Description", "Installation", "Usage", "Contributing"]
+        for section in sections:
             existing_readme = update_readme_section(existing_readme, new_readme_content, section)
 
         with open('README.md', 'w') as f:
-            f.write(existing_readme)
+            f.write(existing_readme.strip() + '\n')
 
-        logging.info(f"README.md updated successfully using {get_env_var('AI_PROVIDER').capitalize()} ({get_env_var('AI_MODEL')}).")
+        logging.info("README.md updated successfully")
         print("readme_generated=true")
+        
     except Exception as e:
         logging.error(f"Error generating README: {e}")
         print("readme_generated=false")

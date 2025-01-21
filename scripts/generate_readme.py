@@ -109,22 +109,31 @@ def get_ai_provider() -> Callable[[str], str]:
     raise ValueError("No valid AI provider available")
 
 def update_readme_section(existing_content: str, new_content: str, section: str) -> str:
-    """Update a specific section in the existing README."""
-    start_marker = f"## {section}"
-    end_marker = "##"
-    start_index = existing_content.find(start_marker)
-    if start_index == -1:
-        return existing_content + f"\n\n{new_content}"
+    """Update a specific section in README without duplication."""
+    section_marker = f"## {section}"
+    next_section_pattern = "\n## "
     
-    end_index = existing_content.find(end_marker, start_index + len(start_marker))
+    # Extract the new section content
+    section_start = new_content.find(section_marker)
+    if section_start == -1:
+        return existing_content
+        
+    section_end = new_content.find(next_section_pattern, section_start + len(section_marker))
+    if section_end == -1:
+        section_end = len(new_content)
+        
+    section_content = new_content[section_start:section_end].strip()
+    
+    # Replace or append section in existing content
+    start_index = existing_content.find(section_marker)
+    if start_index == -1:
+        return f"{existing_content}\n\n{section_content}"
+        
+    end_index = existing_content.find(next_section_pattern, start_index + len(section_marker))
     if end_index == -1:
         end_index = len(existing_content)
-    
-    return (
-        existing_content[:start_index] +
-        new_content +
-        existing_content[end_index:]
-    )
+        
+    return f"{existing_content[:start_index]}{section_content}{existing_content[end_index:]}"
 
 def generate_readme():
     """Main function to generate README."""
